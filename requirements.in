@@ -1,0 +1,12 @@
+fastapi[standard]
+sqlalchemy
+fastapi-users
+fastapi-users-db-sqlalchemy
+fastapi-users
+uvicorn
+pre-commit
+aiosqlite
+pytest-coverage
+pytest
+aiokafka
+openai

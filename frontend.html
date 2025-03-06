@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ChatGPT WebSocket Chat</title>
+</head>
+<body>
+    <h2>Chat with AI</h2>
+    <textarea id="chat" rows="10" cols="50" readonly></textarea><br>
+    <input id="message" type="text">
+    <button onclick="sendMessage()">Send</button>
+
+    <script>
+        let chatId = "test-chat";
+        let ws = new WebSocket(`ws://localhost:8000/test-app/ws/chat/${chatId}`);
+
+        ws.onmessage = (event) => {
+            document.getElementById("chat").value += "\nAI: " + event.data;
+        };
+
+        function sendMessage() {
+            let msg = document.getElementById("message").value;
+            document.getElementById("chat").value += "\nYou: " + msg;
+            ws.send(msg);
+        }
+    </script>
+</body>
+</html>
