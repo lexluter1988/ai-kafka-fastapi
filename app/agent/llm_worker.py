@@ -16,16 +16,16 @@ async def llm_worker():
         topic='chat_requests',
     )
     await consumer.connect()
+    print('LLM request Kafka Consumer Connected')
 
     producer = KafkaTransportProducer(topic='chat_responses')
 
     await producer.connect()
-
+    print('LLM response Kafka Producer Connected')
     try:
         async for msg in consumer.consume():
             chat_id = msg.chat_id
             user_message = msg.user_message
-            print('dgb, sending to LLM: ', user_message)
             stream = await client.chat.completions.create(
                 model=settings.openai_model_name,
                 messages=[{'role': 'user', 'content': user_message}],

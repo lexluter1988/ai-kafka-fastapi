@@ -8,6 +8,7 @@ async def kafka_listener(active_connections: dict):
         topic='chat_responses',
     )
     await consumer.connect()
+    print('LLM response Kafka Consumer Connected')
 
     try:
         async for msg in consumer.consume():

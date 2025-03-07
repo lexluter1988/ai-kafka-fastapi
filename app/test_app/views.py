@@ -32,6 +32,7 @@ async def websocket_endpoint(websocket: WebSocket, chat_id: str):
     producer = KafkaTransportProducer(topic='chat_requests')
 
     await producer.connect()
+    print('LLM request Kafka Producer Connected')
     try:
         while True:
             data = await websocket.receive_text()

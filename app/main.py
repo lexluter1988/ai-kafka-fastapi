@@ -6,9 +6,11 @@ from fastapi import FastAPI
 
 from app.agent.demon import kafka_listener
 from app.agent.llm_worker import llm_worker
+from app.agent.llm_worker_generic import llm_worker_generic
 from app.auth.db import create_db_and_tables
 from app.auth.logic import auth_backend, fastapi_users
 from app.auth.schemas import UserCreate, UserRead, UserUpdate
+from app.openai.views import openai_router
 from app.settings import get_settings
 from app.test_app.views import test_app_router
 
@@ -22,7 +24,8 @@ def get_active_connections():
 
 
 async def start_demons():
-    asyncio.create_task(llm_worker())
+    # asyncio.create_task(llm_worker())
+    asyncio.create_task(llm_worker_generic())
     asyncio.create_task(kafka_listener(active_connections=active_connections))
 
 
@@ -57,6 +60,7 @@ def get_application() -> FastAPI:
         tags=['users'],
     )
     app.include_router(test_app_router)
+    app.include_router(openai_router)
 
     app.add_event_handler('startup', create_db_and_tables)
     app.add_event_handler('startup', start_demons)
