@@ -1,5 +1,6 @@
-from openai import AsyncOpenAI, OpenAI
+from openai import OpenAI
 
+from app.logger import logger
 from app.openai.dto import ChatCompletionRequest
 from app.settings import get_settings
 from app.utils.consumers import KafkaTransportConsumer
@@ -16,22 +17,18 @@ async def llm_worker_generic():
         topic='chat_requests_generic',
     )
     await consumer.connect()
-    print('LLM request Kafka Generic Consumer Connected')
+    logger.info('LLM request Kafka Generic Consumer Connected')
 
-    producer = KafkaTransportProducer(
-        topic='chat_responses_generic'
-    )
+    producer = KafkaTransportProducer(topic='chat_responses_generic')
 
     await producer.connect()
-    print('LLM response Kafka Generic Producer Connected')
+    logger.info('LLM response Kafka Generic Producer Connected')
     try:
         async for msg in consumer.consume():
             request = ChatCompletionRequest.parse_obj(msg)
-            print('dbg got message for LLM', request)
-            response = client.chat.completions.create(
-                **request.dict()
-            )
-            print('dbg, got response from LLM ', response)
+            logger.info('dbg got message for LLM', request)
+            response = client.chat.completions.create(**request.dict())
+            logger.info('dbg, got response from LLM ', response)
 
             await producer.send(
                 event_name='llm_response',

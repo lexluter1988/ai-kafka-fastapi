@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     database_url: str = 'sqlite+aiosqlite:///./test_app.db'
     debug: bool = False
     log_level: str = 'DEBUG'
+    log_format: str = 'json'
     openai_token: str = ''
     openai_host: str
     openai_model_name: str

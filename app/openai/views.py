@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from app.logger import logger
 from app.openai.dto import (
     ChatCompletionRequest,
     ChatCompletionResponse,
@@ -8,9 +9,7 @@ from app.openai.dto import (
     Model,
     ModelData,
 )
-from app.openai.examples import (
-    OPENAI_COMPLETION_RESPONSE_EXAMPLE,
-)
+from app.openai.examples import OPENAI_COMPLETION_RESPONSE_EXAMPLE
 from app.settings import get_settings
 from app.utils.consumers import KafkaTransportConsumer
 from app.utils.producers import KafkaTransportProducer
@@ -32,10 +31,8 @@ async def completions(request: CompletionRequest) -> CompletionResponse:
 
 @openai_router.post('/chat/completions')
 async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResponse:
-    producer = KafkaTransportProducer(
-        topic='chat_requests_generic'
-    )
-    print('LLM request Kafka Generic Producer Connected')
+    producer = KafkaTransportProducer(topic='chat_requests_generic')
+    logger.info('LLM request Kafka Generic Producer Connected')
     await producer.connect()
 
     consumer = KafkaTransportConsumer(
@@ -44,11 +41,9 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
     )
 
     await consumer.connect()
-    print('LLM response Kafka Generic Consumer Connected')
+    logger.info('LLM response Kafka Generic Consumer Connected')
 
-    await producer.send(
-        event_name='user_input', event=request
-    )
+    await producer.send(event_name='user_input', event=request)
 
     try:
         async for msg in consumer.consume():

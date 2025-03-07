@@ -6,6 +6,7 @@ from typing import Type
 from aiokafka import AIOKafkaConsumer
 from pydantic import BaseModel, ValidationError
 
+from app.logger import logger
 from app.settings import get_kafka_settings
 
 settings = get_kafka_settings()
@@ -24,14 +25,14 @@ class KafkaTransportConsumer:
             data = json.loads(value)
             return self.event_class(**data)
         except (ValidationError, json.JSONDecodeError) as e:
-            print(f'Failed to deserialize message: {e}')
+            logger.error(f'Failed to deserialize message: {e}')
             return None  # Можно настроить обработку некорректных сообщений
 
     async def connect(self):
         try:
             await self.consumer.start()
         except Exception as e:
-            print(f'Failed to connect to Kafka: {e}')
+            logger.error(f'Failed to connect to Kafka: {e}')
             raise
 
     async def consume(self):
@@ -40,10 +41,10 @@ class KafkaTransportConsumer:
         try:
             async for msg in self.consumer:
                 if msg.value:
-                    print(f'Received event: {msg.value}')
+                    logger.info(f'Received event: {msg.value}')
                     yield msg.value
         except Exception as e:
-            print(f'Error consuming messages: {e}')
+            logger.error(f'Error consuming messages: {e}')
             raise
 
     async def close(self):

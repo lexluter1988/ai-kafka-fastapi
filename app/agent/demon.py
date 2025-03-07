@@ -1,3 +1,4 @@
+from app.logger import logger
 from app.utils.consumers import KafkaTransportConsumer
 from app.utils.dto import ChatResponseEvent
 
@@ -8,7 +9,7 @@ async def kafka_listener(active_connections: dict):
         topic='chat_responses',
     )
     await consumer.connect()
-    print('LLM response Kafka Consumer Connected')
+    logger.info('LLM response Kafka Consumer Connected')
 
     try:
         async for msg in consumer.consume():
@@ -20,8 +21,8 @@ async def kafka_listener(active_connections: dict):
                     websocket = active_connections[chat_id]
                     await websocket.send_text(response_text)
             else:
-                print(f'Received invalid message: {msg}')
+                logger.info(f'Received invalid message: {msg}')
     except Exception as e:
-        print(f'Error in chat consumer: {e}')
+        logger.error(f'Error in chat consumer: {e}')
     finally:
         await consumer.close()

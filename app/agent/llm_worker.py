@@ -1,5 +1,6 @@
 from openai import AsyncOpenAI
 
+from app.logger import logger
 from app.settings import get_settings
 from app.utils.consumers import KafkaTransportConsumer
 from app.utils.dto import ChatRequestEvent, ChatResponseEvent
@@ -16,12 +17,12 @@ async def llm_worker():
         topic='chat_requests',
     )
     await consumer.connect()
-    print('LLM request Kafka Consumer Connected')
+    logger.info('LLM request Kafka Consumer Connected')
 
     producer = KafkaTransportProducer(topic='chat_responses')
 
     await producer.connect()
-    print('LLM response Kafka Producer Connected')
+    logger.info('LLM response Kafka Producer Connected')
     try:
         async for msg in consumer.consume():
             chat_id = msg.chat_id

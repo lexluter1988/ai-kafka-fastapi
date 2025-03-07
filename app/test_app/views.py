@@ -4,6 +4,7 @@ from starlette.responses import HTMLResponse
 
 from app.auth.db import User
 from app.auth.logic import current_active_user
+from app.logger import logger
 from app.utils.dto import ChatRequestEvent
 from app.utils.producers import KafkaTransportProducer
 
@@ -32,7 +33,7 @@ async def websocket_endpoint(websocket: WebSocket, chat_id: str):
     producer = KafkaTransportProducer(topic='chat_requests')
 
     await producer.connect()
-    print('LLM request Kafka Producer Connected')
+    logger.info('LLM request Kafka Producer Connected')
     try:
         while True:
             data = await websocket.receive_text()

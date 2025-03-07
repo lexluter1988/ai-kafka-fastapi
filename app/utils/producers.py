@@ -5,6 +5,7 @@ import json
 from aiokafka import AIOKafkaProducer
 from pydantic import BaseModel
 
+from app.logger import logger
 from app.settings import get_kafka_settings
 
 settings = get_kafka_settings()
@@ -20,7 +21,7 @@ class KafkaTransportProducer:
             self.producer = AIOKafkaProducer(**settings.dict())
             await self.producer.start()
         except Exception as e:
-            print(f'Failed to connect to Kafka: {e}')
+            logger.error(f'Failed to connect to Kafka: {e}')
             raise
 
     async def send(self, event: BaseModel, event_name: str):
@@ -32,7 +33,7 @@ class KafkaTransportProducer:
                 self.topic, key=event_name.encode('utf-8'), value=message
             )
         except Exception as e:
-            print(f'Failed to send message: {e}')
+            logger.error(f'Failed to send message: {e}')
             raise
 
     async def close(self):
