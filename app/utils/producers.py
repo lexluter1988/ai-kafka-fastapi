@@ -16,6 +16,10 @@ class KafkaTransportProducer:
         self.topic = topic
         self.producer = None
 
+    @staticmethod
+    def get_headers(headers: dict | None = None):
+        return [(key, value.encode('utf-8')) for key, value in headers.items()] if headers else []
+
     async def connect(self):
         try:
             self.producer = AIOKafkaProducer(**settings.dict())
@@ -24,13 +28,16 @@ class KafkaTransportProducer:
             logger.error(f'Failed to connect to Kafka: {e}')
             raise
 
-    async def send(self, event: BaseModel, event_name: str):
+    async def send(self, event: BaseModel, event_name: str, headers: dict | None = None):
         if not self.producer:
             raise RuntimeError('Producer is not connected')
         try:
             message = json.dumps(event.dict()).encode('utf-8')
+            headers = self.get_headers(headers=headers)
+            print('dbg headers ', headers)
+
             await self.producer.send_and_wait(
-                self.topic, key=event_name.encode('utf-8'), value=message
+                self.topic, key=event_name.encode('utf-8'), value=message, headers=headers
             )
         except Exception as e:
             logger.error(f'Failed to send message: {e}')

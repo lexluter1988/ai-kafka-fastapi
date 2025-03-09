@@ -1,3 +1,6 @@
+import asyncio
+import uuid
+
 from fastapi import APIRouter
 
 from app.logger import logger
@@ -11,7 +14,7 @@ from app.openai.dto import (
 )
 from app.openai.examples import OPENAI_COMPLETION_RESPONSE_EXAMPLE
 from app.settings import get_settings
-from app.utils.consumers import KafkaTransportConsumer
+from app.state import response_futures
 from app.utils.producers import KafkaTransportProducer
 
 openai_router = APIRouter(prefix='/v1')
@@ -35,20 +38,18 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
     logger.info('LLM request Kafka Generic Producer Connected')
     await producer.connect()
 
-    consumer = KafkaTransportConsumer(
-        event_class=ChatCompletionResponse,
-        topic='chat_responses_generic',
-    )
+    correlation_id = str(uuid.uuid4())
+    headers = {'correlation_id': correlation_id}
 
-    await consumer.connect()
-    logger.info('LLM response Kafka Generic Consumer Connected')
+    loop = asyncio.get_event_loop()
+    future = loop.create_future()
+    response_futures[correlation_id] = future
 
-    await producer.send(event_name='user_input', event=request)
+    await producer.send(event_name='user_input', event=request, headers=headers)
 
     try:
-        async for msg in consumer.consume():
-            response = ChatCompletionResponse.parse_obj(msg)
-            return response
-    finally:
-        await consumer.close()
-        await producer.close()
+        response = await asyncio.wait_for(future, timeout=10)
+        print(f'got response {response}')
+        return ChatCompletionResponse.parse_obj(response)
+    except asyncio.TimeoutError:
+        raise

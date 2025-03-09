@@ -24,16 +24,12 @@ async def llm_worker_generic():
     await producer.connect()
     logger.info('LLM response Kafka Generic Producer Connected')
     try:
-        async for msg in consumer.consume():
+        async for msg, headers in consumer.consume():
             request = ChatCompletionRequest.parse_obj(msg)
             logger.info('dbg got message for LLM', request)
             response = client.chat.completions.create(**request.dict())
             logger.info('dbg, got response from LLM ', response)
-
-            await producer.send(
-                event_name='llm_response',
-                event=response,
-            )
+            await producer.send(event_name='llm_response', event=response, headers=headers)
 
     finally:
         await consumer.close()

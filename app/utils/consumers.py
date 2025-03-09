@@ -26,7 +26,7 @@ class KafkaTransportConsumer:
             return self.event_class(**data)
         except (ValidationError, json.JSONDecodeError) as e:
             logger.error(f'Failed to deserialize message: {e}')
-            return None  # Можно настроить обработку некорректных сообщений
+            return None
 
     async def connect(self):
         try:
@@ -41,8 +41,9 @@ class KafkaTransportConsumer:
         try:
             async for msg in self.consumer:
                 if msg.value:
-                    logger.info(f'Received event: {msg.value}')
-                    yield msg.value
+                    headers = {key: value.decode() for key, value in msg.headers}
+                    logger.info(f'Received event: {msg.value} and headers: {headers}')
+                    yield msg.value, headers
         except Exception as e:
             logger.error(f'Error consuming messages: {e}')
             raise

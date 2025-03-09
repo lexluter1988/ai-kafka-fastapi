@@ -24,7 +24,7 @@ async def llm_worker():
     await producer.connect()
     logger.info('LLM response Kafka Producer Connected')
     try:
-        async for msg in consumer.consume():
+        async for msg, headers in consumer.consume():
             chat_id = msg.chat_id
             user_message = msg.user_message
             stream = await client.chat.completions.create(

@@ -5,6 +5,7 @@ from starlette.responses import HTMLResponse
 from app.auth.db import User
 from app.auth.logic import current_active_user
 from app.logger import logger
+from app.state import active_connections
 from app.utils.dto import ChatRequestEvent
 from app.utils.producers import KafkaTransportProducer
 
@@ -24,10 +25,6 @@ async def serve_html():
 
 @test_app_router.websocket('/ws/chat/{chat_id}')
 async def websocket_endpoint(websocket: WebSocket, chat_id: str):
-    from app.main import get_active_connections
-
-    active_connections = get_active_connections()
-
     await websocket.accept()
     active_connections[chat_id] = websocket
     producer = KafkaTransportProducer(topic='chat_requests')
