@@ -28,15 +28,15 @@ async def llm_worker_generic():
     try:
         async for msg, headers in consumer.consume():
             request = ChatCompletionRequest.parse_obj(msg)
-            logger.info('dbg got message for LLM', request)
+            # logger.info('dbg got message for LLM', request)
             response = client.chat.completions.create(**request.dict())
-            logger.info('dbg, got response from LLM ', response)
+            # logger.info('dbg, got response from LLM ', response)
             await producer.send(event_name='llm_response', event=response, headers=headers)
 
     finally:
-        await consumer.close()
         await producer.close()
+        await consumer.close()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     asyncio.run(llm_worker_generic())

@@ -31,6 +31,7 @@ class KafkaSettings(BaseSettings):
 
     bootstrap_servers: str = 'localhost:9093'
     security_protocol: str = 'PLAINTEXT'
+    group_id: str = None
     sasl_mechanism: str = ''
     sasl_plain_username: str = ''
     sasl_plain_password: str = ''

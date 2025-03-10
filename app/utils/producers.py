@@ -22,7 +22,7 @@ class KafkaTransportProducer:
 
     async def connect(self):
         try:
-            self.producer = AIOKafkaProducer(**settings.dict())
+            self.producer = AIOKafkaProducer(**settings.dict(exclude={'group_id'}))
             await self.producer.start()
         except Exception as e:
             logger.error(f'Failed to connect to Kafka: {e}')
