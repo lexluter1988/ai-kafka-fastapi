@@ -1,3 +1,5 @@
+import asyncio
+
 from openai import OpenAI
 
 from app.logger import logger
@@ -34,3 +36,7 @@ async def llm_worker_generic():
     finally:
         await consumer.close()
         await producer.close()
+
+
+if __name__ == "__main__":
+    asyncio.run(llm_worker_generic())

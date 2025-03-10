@@ -19,7 +19,7 @@ settings = get_settings()
 
 async def start_demons():
     # asyncio.create_task(llm_worker())
-    asyncio.create_task(llm_worker_generic())
+    # asyncio.create_task(llm_worker_generic())
     # asyncio.create_task(kafka_listener(active_connections=active_connections))
     asyncio.create_task(consume_responses())
 

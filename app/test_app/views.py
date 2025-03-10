@@ -27,7 +27,9 @@ async def serve_html():
 async def websocket_endpoint(websocket: WebSocket, chat_id: str):
     await websocket.accept()
     active_connections[chat_id] = websocket
-    producer = KafkaTransportProducer(topic='chat_requests')
+    producer = KafkaTransportProducer(
+        topic='chat_requests'
+    )
 
     await producer.connect()
     logger.info('LLM request Kafka Producer Connected')
