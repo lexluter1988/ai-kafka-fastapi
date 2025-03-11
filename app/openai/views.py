@@ -12,7 +12,6 @@ from app.openai.dto import (
     Model,
     ModelData,
 )
-from app.openai.examples import OPENAI_COMPLETION_RESPONSE_EXAMPLE
 from app.settings import get_settings
 from app.state import response_futures
 from app.utils.producers import KafkaTransportProducer
@@ -29,7 +28,24 @@ async def get_models() -> Model:
 
 @openai_router.post('/completions')
 async def completions(request: CompletionRequest) -> CompletionResponse:
-    return CompletionResponse.parse_obj(OPENAI_COMPLETION_RESPONSE_EXAMPLE)
+    producer = KafkaTransportProducer(topic='chat_requests_generic')
+    logger.info('LLM request Kafka Generic Producer Connected')
+    await producer.connect()
+
+    correlation_id = str(uuid.uuid4())
+    headers = {'correlation_id': correlation_id, 'event_type': 'completions'}
+
+    loop = asyncio.get_event_loop()
+    future = loop.create_future()
+    response_futures[correlation_id] = future
+
+    await producer.send(event=request, headers=headers)
+
+    try:
+        response = await asyncio.wait_for(future, timeout=10)
+        return CompletionResponse.parse_obj(response)
+    except asyncio.TimeoutError:
+        raise
 
 
 @openai_router.post('/chat/completions')
@@ -39,17 +55,16 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
     await producer.connect()
 
     correlation_id = str(uuid.uuid4())
-    headers = {'correlation_id': correlation_id}
+    headers = {'correlation_id': correlation_id, 'event_type': 'chat.completions'}
 
     loop = asyncio.get_event_loop()
     future = loop.create_future()
     response_futures[correlation_id] = future
 
-    await producer.send(event_name='user_input', event=request, headers=headers)
+    await producer.send(event=request, headers=headers)
 
     try:
         response = await asyncio.wait_for(future, timeout=10)
-        print(f'got response {response}')
         return ChatCompletionResponse.parse_obj(response)
     except asyncio.TimeoutError:
         raise

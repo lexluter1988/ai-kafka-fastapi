@@ -65,4 +65,4 @@ services:
       GROUP_ID: "qwen2_5"
     deploy:
       mode: replicated
-      replicas: 2
+      replicas: 1

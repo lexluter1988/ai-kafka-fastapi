@@ -36,7 +36,6 @@ async def llm_worker():
             async for chunk in stream:
                 text = chunk.choices[0].delta.content or ''.strip()
                 await producer.send(
-                    event_name='llm_response',
                     event=ChatResponseEvent(chat_id=chat_id, response=text),
                 )
 
