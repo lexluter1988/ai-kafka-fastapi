@@ -1,7 +1,9 @@
 import asyncio
 import uuid
+from typing import AsyncGenerator
 
 from fastapi import APIRouter
+from starlette.responses import StreamingResponse
 
 from app.logger import logger
 from app.openai.dto import (
@@ -41,6 +43,10 @@ async def completions(request: CompletionRequest) -> CompletionResponse:
 
     await producer.send(event=request, headers=headers)
 
+    if request.stream:
+        return StreamingResponse(
+            completions_stream_generator(correlation_id), media_type='text/event-stream'
+        )
     try:
         response = await asyncio.wait_for(future, timeout=10)
         return CompletionResponse.parse_obj(response)
@@ -55,7 +61,10 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
     await producer.connect()
 
     correlation_id = str(uuid.uuid4())
-    headers = {'correlation_id': correlation_id, 'event_type': 'chat.completions.request'}
+    headers = {
+        'correlation_id': correlation_id,
+        'event_type': 'chat.completions.request',
+    }
 
     loop = asyncio.get_event_loop()
     future = loop.create_future()
@@ -63,8 +72,61 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
 
     await producer.send(event=request, headers=headers)
 
+    if request.stream:
+        return StreamingResponse(
+            chat_completions_stream_generator(correlation_id), media_type='text/event-stream'
+        )
+
     try:
         response = await asyncio.wait_for(future, timeout=10)
         return ChatCompletionResponse.parse_obj(response)
     except asyncio.TimeoutError:
         raise
+
+
+async def chat_completions_stream_generator(correlation_id: str) -> AsyncGenerator[str, None]:
+    """
+    Асинхронный генератор для передачи частичных ответов
+    от chat.completions в FastAPI StreamingResponse
+    """
+    while True:
+        if correlation_id not in response_futures:
+            response_futures[correlation_id] = asyncio.Future()
+
+        future = response_futures[correlation_id]
+
+        try:
+            chunk = await asyncio.wait_for(future, timeout=5)
+            if chunk is None:
+                break
+            yield chunk.json()
+
+            response_futures[correlation_id] = asyncio.Future()
+        except asyncio.TimeoutError:
+            break
+        except asyncio.CancelledError:
+            logger.error(f'Streaming cancelled for {correlation_id}')
+
+
+async def completions_stream_generator(correlation_id: str) -> AsyncGenerator[str, None]:
+    """
+    Асинхронный генератор для передачи частичных ответов
+    от completions в FastAPI StreamingResponse
+    """
+    while True:
+        if correlation_id not in response_futures:
+            response_futures[correlation_id] = asyncio.Future()
+
+        future = response_futures[correlation_id]
+
+        try:
+            chunk = await asyncio.wait_for(future, timeout=5)
+            if chunk is None:
+                break
+            yield chunk.json()
+
+            response_futures[correlation_id] = asyncio.Future()
+        except asyncio.TimeoutError:
+            break
+        except asyncio.CancelledError:
+            logger.error(f'Streaming cancelled for {correlation_id}')

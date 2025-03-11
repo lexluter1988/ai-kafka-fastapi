@@ -3,7 +3,7 @@ from openai import AsyncOpenAI
 from app.logger import logger
 from app.settings import get_settings
 from app.utils.consumers import KafkaTransportConsumer
-from app.utils.dto import ChatRequestEvent, ChatResponseEvent
+from app.utils.dto import ChatResponseEvent
 from app.utils.producers import KafkaTransportProducer
 
 settings = get_settings()
@@ -13,7 +13,6 @@ async def llm_worker():
     client = AsyncOpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
 
     consumer = KafkaTransportConsumer(
-        event_class=ChatRequestEvent,
         topic='chat_requests',
     )
     await consumer.connect()

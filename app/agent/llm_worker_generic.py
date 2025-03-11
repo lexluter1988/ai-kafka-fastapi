@@ -1,6 +1,6 @@
 import asyncio
 
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 
 from app.logger import logger
 from app.openai.dto import ChatCompletionRequest, CompletionRequest
@@ -13,6 +13,7 @@ settings = get_settings()
 
 async def llm_worker_generic():
     client = OpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
+    async_client = AsyncOpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
 
     consumer = KafkaTransportConsumer(
         topic='chat_requests_generic',
@@ -28,23 +29,58 @@ async def llm_worker_generic():
         async for msg, headers in consumer.consume():
             event_type = headers.get('event_type')
             logger.info(f'Received {event_type} request {msg}')
+
             if event_type == 'chat.completions.request':
                 request = ChatCompletionRequest.parse_obj(msg)
-                response = client.chat.completions.create(**request.dict())
-                logger.info(f'Received response for {event_type} request {response}')
-                headers['event_type'] = 'chat.completions.response'
+                if request.stream:
+                    await chat_completions_streaming(
+                        client=async_client, producer=producer, request=request, headers=headers
+                    )
+                else:
+                    response = client.chat.completions.create(**request.dict())
+                    logger.info(f'Received response for {event_type} request {response}')
+                    headers['event_type'] = 'chat.completions.response'
+                    await producer.send(event=response, headers=headers)
+
             elif event_type == 'completions.request':
                 request = CompletionRequest.parse_obj(msg)
-                response = client.completions.create(**request.dict())
-                logger.info(f'Received response for {event_type} request {response}')
-                headers['event_type'] = 'completions.response'
+                if request.stream:
+                    await completions_streaming(
+                        client=async_client, producer=producer, request=request, headers=headers
+                    )
+                else:
+                    response = client.completions.create(**request.dict())
+                    logger.info(f'Received response for {event_type} request {response}')
+                    headers['event_type'] = 'completions.response'
+                    await producer.send(event=response, headers=headers)
             else:
                 raise
-            await producer.send(event=response, headers=headers)
 
     finally:
         await producer.close()
         await consumer.close()
+
+
+async def chat_completions_streaming(
+    *,
+    client: AsyncOpenAI,
+    producer: KafkaTransportProducer,
+    request: ChatCompletionRequest,
+    headers,
+):
+    stream = await client.chat.completions.create(**request.dict())
+    headers['event_type'] = 'chat.completions.response'
+    async for chunk in stream:
+        await producer.send(event=chunk, headers=headers)
+
+
+async def completions_streaming(
+    *, client: AsyncOpenAI, producer: KafkaTransportProducer, request: CompletionRequest, headers
+):
+    stream = await client.completions.create(**request.dict())
+    headers['event_type'] = 'completions.response'
+    async for chunk in stream:
+        await producer.send(event=chunk, headers=headers)
 
 
 if __name__ == '__main__':
