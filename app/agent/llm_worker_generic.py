@@ -15,7 +15,6 @@ async def llm_worker_generic():
     client = OpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
 
     consumer = KafkaTransportConsumer(
-        event_class=ChatCompletionRequest,
         topic='chat_requests_generic',
     )
     await consumer.connect()
@@ -29,14 +28,16 @@ async def llm_worker_generic():
         async for msg, headers in consumer.consume():
             event_type = headers.get('event_type')
             logger.info(f'Received {event_type} request {msg}')
-            if event_type == 'chat.completions':
+            if event_type == 'chat.completions.request':
                 request = ChatCompletionRequest.parse_obj(msg)
                 response = client.chat.completions.create(**request.dict())
                 logger.info(f'Received response for {event_type} request {response}')
-            elif event_type == 'completions':
+                headers['event_type'] = 'chat.completions.response'
+            elif event_type == 'completions.request':
                 request = CompletionRequest.parse_obj(msg)
                 response = client.completions.create(**request.dict())
                 logger.info(f'Received response for {event_type} request {response}')
+                headers['event_type'] = 'completions.response'
             else:
                 raise
             await producer.send(event=response, headers=headers)

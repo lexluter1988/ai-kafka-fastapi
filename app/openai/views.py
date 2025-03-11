@@ -33,7 +33,7 @@ async def completions(request: CompletionRequest) -> CompletionResponse:
     await producer.connect()
 
     correlation_id = str(uuid.uuid4())
-    headers = {'correlation_id': correlation_id, 'event_type': 'completions'}
+    headers = {'correlation_id': correlation_id, 'event_type': 'completions.request'}
 
     loop = asyncio.get_event_loop()
     future = loop.create_future()
@@ -55,7 +55,7 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
     await producer.connect()
 
     correlation_id = str(uuid.uuid4())
-    headers = {'correlation_id': correlation_id, 'event_type': 'chat.completions'}
+    headers = {'correlation_id': correlation_id, 'event_type': 'chat.completions.request'}
 
     loop = asyncio.get_event_loop()
     future = loop.create_future()

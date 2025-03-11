@@ -16,7 +16,7 @@ class CompletionRequest(BaseModel):
     model: str = Field(description='Имя модели', default='')
     prompt: str = Field(description='Текстовый запрос', default='')
     max_tokens: int = Field(description='Максимальное количество токенов', default=50)
-    stream: bool = Field(description='Потоковый ли ответ', default=True)
+    stream: bool = Field(description='Потоковый ли ответ', default=False)
 
 
 class CompletionResponseChoices(BaseModel):

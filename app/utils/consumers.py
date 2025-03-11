@@ -1,29 +1,38 @@
 from __future__ import annotations
 
 import json
-from typing import Type
 
 from aiokafka import AIOKafkaConsumer
-from pydantic import BaseModel, ValidationError
+from pydantic import ValidationError
 
 from app.logger import logger
+from app.openai.dto import (
+    ChatCompletionRequest,
+    ChatCompletionResponse,
+    CompletionRequest,
+    CompletionResponse,
+)
 from app.settings import get_kafka_settings
 
 settings = get_kafka_settings()
 
 
 class KafkaTransportConsumer:
-    def __init__(self, topic: str, event_class: Type[BaseModel]):
+    def __init__(self, topic: str):
         self.topic = topic
-        self.event_class = event_class
         self.consumer = AIOKafkaConsumer(
             self.topic, **settings.dict(), value_deserializer=lambda v: self.deserialize_message(v)
         )
+        self.serializers_map = {
+            'completions.request': CompletionRequest,
+            'completions.response': CompletionResponse,
+            'chat.completions.request': ChatCompletionRequest,
+            'chat.completions.response': ChatCompletionResponse,
+        }
 
     def deserialize_message(self, value: bytes):
         try:
-            data = json.loads(value)
-            return self.event_class(**data)
+            return json.loads(value)
         except (ValidationError, json.JSONDecodeError) as e:
             logger.error(f'Failed to deserialize message: {e}')
             return None
@@ -42,8 +51,26 @@ class KafkaTransportConsumer:
             async for msg in self.consumer:
                 if msg.value:
                     headers = {key: value.decode() for key, value in msg.headers}
-                    logger.info(f'Received event: {msg.value} and headers: {headers}')
-                    yield msg.value, headers
+                    event_type = headers.get('event_type')
+
+                    if not event_type:
+                        logger.warning('Missing event_type in headers, skipping message.')
+                        continue
+
+                    serializer_class = self.serializers_map.get(event_type)
+                    if not serializer_class:
+                        logger.warning(f"Unknown event_type '{event_type}', skipping message.")
+                        continue
+
+                    try:
+                        event = serializer_class(**msg.value)
+                        yield event, headers
+                    except ValidationError as e:
+                        logger.error(f"Failed to deserialize event '{event_type}': {e}")
+
+                    logger.info(
+                        f'Received event: {msg.value} of type: {event_type} and headers: {headers}'
+                    )
         except Exception as e:
             logger.error(f'Error consuming messages: {e}')
             raise

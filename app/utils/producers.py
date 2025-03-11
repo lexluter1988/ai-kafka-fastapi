@@ -34,8 +34,6 @@ class KafkaTransportProducer:
         try:
             message = json.dumps(event.dict()).encode('utf-8')
             headers = self.get_headers(headers=headers)
-            print('dbg headers ', headers)
-
             await self.producer.send_and_wait(self.topic, value=message, headers=headers)
         except Exception as e:
             logger.error(f'Failed to send message: {e}')

@@ -1,5 +1,4 @@
 from app.logger import logger
-from app.openai.dto import ChatCompletionResponse
 from app.state import response_futures
 from app.utils.consumers import KafkaTransportConsumer
 from app.utils.dto import ChatResponseEvent
@@ -7,7 +6,6 @@ from app.utils.dto import ChatResponseEvent
 
 async def kafka_listener(active_connections: dict):
     consumer = KafkaTransportConsumer(
-        event_class=ChatResponseEvent,
         topic='chat_responses',
     )
     await consumer.connect()
@@ -32,13 +30,11 @@ async def kafka_listener(active_connections: dict):
 
 async def consume_responses():
     consumer = KafkaTransportConsumer(
-        event_class=ChatCompletionResponse,
         topic='chat_responses_generic',
     )
     await consumer.connect()
     try:
         async for msg, headers in consumer.consume():
-            logger.info('dbg got message for LLM', msg)
             correlation_id = headers.get('correlation_id')
 
             if correlation_id in response_futures:
