@@ -1,25 +1,24 @@
 from app.logger import logger
 from app.state import response_futures
 from app.utils.consumers import KafkaTransportConsumer
-from app.utils.dto import ChatResponseEvent
 
 
 async def kafka_listener(active_connections: dict):
     consumer = KafkaTransportConsumer(
-        topic='chat_responses',
+        topic='chat_responses_generic',
     )
     await consumer.connect()
     logger.info('LLM response Kafka Consumer Connected')
 
     try:
         async for msg, headers in consumer.consume():
-            if msg and isinstance(msg, ChatResponseEvent):
-                chat_id = msg.chat_id
-                response_text = msg.response
-
-                if chat_id in active_connections:
-                    websocket = active_connections[chat_id]
-                    await websocket.send_text(response_text)
+            correlation_id = headers.get('correlation_id')
+            if correlation_id in active_connections:
+                websocket = active_connections[correlation_id]
+                if msg and hasattr(msg, 'choices') and len(msg.choices) > 0:
+                    response_text = msg.choices[0].delta.content or msg.choices[0].message.content
+                    if response_text:
+                        await websocket.send_text(response_text)
             else:
                 logger.info(f'Received invalid message: {msg}')
     except Exception as e:

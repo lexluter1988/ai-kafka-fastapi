@@ -5,11 +5,14 @@ from starlette.responses import HTMLResponse
 from app.auth.db import User
 from app.auth.logic import current_active_user
 from app.logger import logger
+from app.openai.dto import ChatCompletionRequest
+from app.settings import get_settings
 from app.state import active_connections
-from app.utils.dto import ChatRequestEvent
 from app.utils.producers import KafkaTransportProducer
 
 test_app_router = APIRouter(prefix='/test-app')
+
+settings = get_settings()
 
 
 @test_app_router.get('/welcome')
@@ -27,14 +30,21 @@ async def serve_html():
 async def websocket_endpoint(websocket: WebSocket, chat_id: str):
     await websocket.accept()
     active_connections[chat_id] = websocket
-    producer = KafkaTransportProducer(topic='chat_requests')
+    producer = KafkaTransportProducer(topic='chat_requests_generic')
 
     await producer.connect()
     logger.info('LLM request Kafka Producer Connected')
     try:
         while True:
             data = await websocket.receive_text()
-            await producer.send(event=ChatRequestEvent(chat_id=chat_id, user_message=data))
+            await producer.send(
+                event=ChatCompletionRequest(
+                    model=settings.openai_model_name,
+                    messages=[{'role': 'user', 'content': data}],
+                    stream=True,
+                ),
+                headers={'event_type': 'chat.completions.request', 'correlation_id': chat_id},
+            )
 
     except WebSocketDisconnect:
         del active_connections[chat_id]
