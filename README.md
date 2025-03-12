@@ -1,11 +1,10 @@
-# fastwithkafka
+# OpenAI compatible FastAPI server with communication with LLM via Kafka messaging bus
 
-FastAPI with fastapi-users
-Plus with OpenAI integration via websockets and Kafka messaging bus
+Plus with OpenAI integration via websockets and Kafka messaging bus.
 
 ## Author
 
-Author: Your Name
+Author: Alexey Suponin <lexxsmith@gmail.com>
 
 ## Version
 
@@ -25,15 +24,60 @@ make deps
 
 mv .env.example .env
 ```
+
 Now write your base url, token, model into `.env`
 
-```
-uvicorn --host 0.0.0.0 --port 8000 --reload app.main:application
-```
+#### Run full stack
 
-Now visit the http://127.0.0.1:8000/test-app
+Run `docker-compose up -d --build` 
 
+
+#### Local development
+
+If you want to run FastAPI locally, comment the `main` service in `docker-compose.yml`
+
+Run `docker-compose up -d --build`
+Start dev server `uvicorn --host 0.0.0.0 --port 8000 --reload app.main:application`
 
 ## Kafka
 
 UI is accessible on http://127.0.0.1:8080/
+
+
+## SwaggerUI
+
+Visit the 
+
+Now visit the http://127.0.0.1:8000/docs
+
+You can call `/completions` and `/chat/completions` with sync or stream method.
+
+## OpenAI compatibility
+
+With running FastAPI server, you can set openai client and test it like ChatGPT
+
+```python
+from openai import OpenAI, AsyncOpenAI
+
+base_url = 'http://127.0.0.1:8000/v1'
+
+client = OpenAI(api_key='token', base_url=base_url)
+async_client = AsyncOpenAI(api_key='token', base_url=base_url)
+
+def test():
+    chat_request = {
+        'model': 'Qwen/Qwen2.5-72B-Instruct-AWQ',
+        'messages': [
+            {'role': 'system', 'content': 'Ты помощник.'},
+            {'role': 'user', 'content': 'Привет, как дела?'},
+        ],
+        'temperature': 0.7,
+        'stream': False,
+    }
+    response = client.chat.completions.create(**chat_request)
+    print(response)
+
+test()
+```
+
+There are more example in [test.py](test.py)

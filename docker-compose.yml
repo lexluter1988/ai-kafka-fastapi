@@ -65,6 +65,20 @@ services:
       mode: replicated
       replicas: 1
 
+  main:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qwen-worker
+    environment:
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: "qwen2_5"
+
 # for testing purpose
 #  chatgpt-worker:
 #    build:

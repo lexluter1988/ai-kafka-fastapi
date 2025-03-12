@@ -3,7 +3,7 @@ from app.state import response_futures
 from app.utils.consumers import KafkaTransportConsumer
 
 
-async def kafka_listener(active_connections: dict):
+async def consume_responses_websockets(active_connections: dict):
     consumer = KafkaTransportConsumer(
         topic='chat_responses_generic',
     )
@@ -27,7 +27,7 @@ async def kafka_listener(active_connections: dict):
         await consumer.close()
 
 
-async def consume_responses():
+async def consume_responses_futures():
     consumer = KafkaTransportConsumer(
         topic='chat_responses_generic',
     )
