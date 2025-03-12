@@ -47,26 +47,7 @@ services:
     ports:
       - "8080:8080"
 
-#  qwen-worker:
-#    build:
-#      context: .
-#      dockerfile: app/agent/Dockerfile
-#    depends_on:
-#      - kafka
-#    environment:
-#      OPENAI_TOKEN: "${OPENAI_TOKEN}"
-#      OPENAI_MODEL_NAME: "${OPENAI_MODEL_NAME}"
-#      OPENAI_HOST: "${OPENAI_HOST}"
-#      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
-#      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
-#      BOOTSTRAP_SERVERS: kafka:9092
-#      GROUP_ID: "qwen2_5"
-#    deploy:
-#      mode: replicated
-#      replicas: 1
-
-
-  chatgpt-worker:
+  qwen-worker:
     build:
       context: .
       dockerfile: app/agent/Dockerfile
@@ -74,12 +55,31 @@ services:
       - kafka
     environment:
       OPENAI_TOKEN: "${OPENAI_TOKEN}"
-      OPENAI_MODEL_NAME: "gpt-4"
-      OPENAI_HOST: "https://api.openai.com/v1"
+      OPENAI_MODEL_NAME: "${OPENAI_MODEL_NAME}"
+      OPENAI_HOST: "${OPENAI_HOST}"
       KAFKA_REQUEST_TOPIC: "chat_requests_generic"
       KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
       BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: "gpt-4"
+      GROUP_ID: "qwen2_5"
     deploy:
       mode: replicated
       replicas: 1
+
+# for testing purpose
+#  chatgpt-worker:
+#    build:
+#      context: .
+#      dockerfile: app/agent/Dockerfile
+#    depends_on:
+#      - kafka
+#    environment:
+#      OPENAI_TOKEN: "${OPENAI_TOKEN}"
+#      OPENAI_MODEL_NAME: "gpt-4"
+#      OPENAI_HOST: "https://api.openai.com/v1"
+#      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+#      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+#      BOOTSTRAP_SERVERS: kafka:9092
+#      GROUP_ID: "gpt-4"
+#    deploy:
+#      mode: replicated
+#      replicas: 1

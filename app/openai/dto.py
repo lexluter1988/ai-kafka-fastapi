@@ -58,7 +58,8 @@ class ChatCompletionRequest(BaseModel):
 
 
 class ChatCompletionResponseMessage(BaseModel):
-    role: str = Field(description='Роль', default='assistant')
+    role: Optional[str] = Field(description='Роль', default=None)
+    refusal: Optional[str] = Field(default=None)
     reasoning_content: dict | None = Field(default=dict())
     content: str = Field(description='Текст ответа')
     tool_calls: list[str] | None
@@ -66,9 +67,14 @@ class ChatCompletionResponseMessage(BaseModel):
 
 class ChatCompletionResponseChoices(BaseModel):
     index: int
-    message: ChatCompletionResponseMessage = Field(description='Сообщение от ассистента')
+    delta: Optional[ChatCompletionResponseMessage] = Field(
+        description='Часть сообщения при потоке', default=None
+    )
+    message: Optional[ChatCompletionResponseMessage] = Field(
+        description='Сообщение от ассистента', default=None
+    )
     logprobs: str | None
-    finish_reason: str = Field(description='Причина завершения', default='stop')
+    finish_reason: Optional[str] = Field(description='Причина завершения', default='stop')
 
 
 class ChatCompletionResponse(BaseModel):
