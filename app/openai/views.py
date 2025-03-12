@@ -99,7 +99,8 @@ async def chat_completions_stream_generator(correlation_id: str) -> AsyncGenerat
             chunk = await asyncio.wait_for(future, timeout=5)
             if chunk is None:
                 break
-            yield chunk.json()
+            json_chunk = chunk.model_dump_json()
+            yield f'data: {json_chunk}\n\n'  # for OpenAI compatibility
 
             response_futures[correlation_id] = asyncio.Future()
         except asyncio.TimeoutError:
@@ -123,7 +124,9 @@ async def completions_stream_generator(correlation_id: str) -> AsyncGenerator[st
             chunk = await asyncio.wait_for(future, timeout=5)
             if chunk is None:
                 break
-            yield chunk.json()
+
+            json_chunk = chunk.model_dump_json()
+            yield f'data: {json_chunk}\n\n'  # for OpenAI compatibility
 
             response_futures[correlation_id] = asyncio.Future()
         except asyncio.TimeoutError:
