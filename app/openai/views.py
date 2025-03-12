@@ -48,7 +48,7 @@ async def completions(request: CompletionRequest) -> CompletionResponse:
             completions_stream_generator(correlation_id), media_type='text/event-stream'
         )
     try:
-        response = await asyncio.wait_for(future, timeout=10)
+        response = await asyncio.wait_for(future, timeout=20)
         return CompletionResponse.parse_obj(response)
     except asyncio.TimeoutError:
         raise
@@ -78,7 +78,7 @@ async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResp
         )
 
     try:
-        response = await asyncio.wait_for(future, timeout=10)
+        response = await asyncio.wait_for(future, timeout=20)
         return ChatCompletionResponse.parse_obj(response)
     except asyncio.TimeoutError:
         raise

@@ -34,8 +34,6 @@ services:
         sleep 10 &&\n
         kafka-topics --create --topic chat_requests_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
         kafka-topics --create --topic chat_responses_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
-        kafka-topics --create --topic chat_requests --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
-        kafka-topics --create --topic chat_requests --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
         wait
 
   kafka-ui:
@@ -49,7 +47,26 @@ services:
     ports:
       - "8080:8080"
 
-  llm-worker-generic:
+#  qwen-worker:
+#    build:
+#      context: .
+#      dockerfile: app/agent/Dockerfile
+#    depends_on:
+#      - kafka
+#    environment:
+#      OPENAI_TOKEN: "${OPENAI_TOKEN}"
+#      OPENAI_MODEL_NAME: "${OPENAI_MODEL_NAME}"
+#      OPENAI_HOST: "${OPENAI_HOST}"
+#      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+#      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+#      BOOTSTRAP_SERVERS: kafka:9092
+#      GROUP_ID: "qwen2_5"
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+
+
+  chatgpt-worker:
     build:
       context: .
       dockerfile: app/agent/Dockerfile
@@ -57,12 +74,12 @@ services:
       - kafka
     environment:
       OPENAI_TOKEN: "${OPENAI_TOKEN}"
-      OPENAI_MODEL_NAME: "${OPENAI_MODEL_NAME}"
-      OPENAI_HOST: "${OPENAI_HOST}"
+      OPENAI_MODEL_NAME: "gpt-4"
+      OPENAI_HOST: "https://api.openai.com/v1"
       KAFKA_REQUEST_TOPIC: "chat_requests_generic"
       KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
       BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: "qwen2_5"
+      GROUP_ID: "gpt-4"
     deploy:
       mode: replicated
       replicas: 1
