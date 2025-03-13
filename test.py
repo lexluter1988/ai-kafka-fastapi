@@ -4,11 +4,15 @@ from openai import AsyncOpenAI, OpenAI
 
 base_url = 'http://127.0.0.1:8000/v1'
 
-client = OpenAI(api_key='token', base_url=base_url)
-async_client = AsyncOpenAI(api_key='token', base_url=base_url)
+
+def get_clients(token: str = 'token') -> tuple[OpenAI, AsyncOpenAI]:
+    client = OpenAI(api_key=token, base_url=base_url)
+    async_client = AsyncOpenAI(api_key=token, base_url=base_url)
+    return client, async_client
 
 
-def test_chat_completion__sync():
+def test_chat_completion__sync(token: str = 'token'):
+    client, async_client = get_clients(token=token)
     chat_request = {
         'model': 'Qwen/Qwen2.5-72B-Instruct-AWQ',
         'messages': [
@@ -22,7 +26,8 @@ def test_chat_completion__sync():
     print(response)
 
 
-def test_completion__sync():
+def test_completion__sync(token: str = 'token'):
+    client, async_client = get_clients(token=token)
     completion_request = {
         'model': 'Qwen/Qwen2.5-72B-Instruct-AWQ',
         'prompt': '<|im_start|>user\nTell me a short story about AI.<|im_end|>\n<|im_start|>assistant\n',  # noqa: E501
@@ -33,7 +38,8 @@ def test_completion__sync():
     print(response)
 
 
-async def test_chat_completion__async():
+async def test_chat_completion__async(token: str = 'token'):
+    client, async_client = get_clients(token=token)
     chat_request = {
         'model': 'Qwen/Qwen2.5-72B-Instruct-AWQ',
         'messages': [
@@ -49,7 +55,8 @@ async def test_chat_completion__async():
         print(chunk)
 
 
-async def test_completion__async():
+async def test_completion__async(token: str = 'token'):
+    client, async_client = get_clients(token=token)
     completion_request = {
         'model': 'Qwen/Qwen2.5-72B-Instruct-AWQ',
         'prompt': '<|im_start|>user\nTell me a short story about AI.<|im_end|>\n<|im_start|>assistant\n',  # noqa: E501

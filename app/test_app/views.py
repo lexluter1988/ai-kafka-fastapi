@@ -1,9 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from fastapi.websockets import WebSocket, WebSocketDisconnect
 from starlette.responses import HTMLResponse
 
-from app.auth.db import User
-from app.auth.logic import current_active_user
 from app.logger import logger
 from app.openai.dto import ChatCompletionRequest
 from app.settings import get_settings
@@ -13,11 +11,6 @@ from app.utils.producers import KafkaTransportProducer
 test_app_router = APIRouter(prefix='/test-app')
 
 settings = get_settings()
-
-
-@test_app_router.get('/welcome')
-async def welcome(user: User = Depends(current_active_user)):  # noqa: B008
-    return {f'Wilkomen {user.email}!'}
 
 
 @test_app_router.get('/', response_class=HTMLResponse)

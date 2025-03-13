@@ -60,8 +60,11 @@ async def handle_chat_completion(
             client=async_client, producer=producer, request=request, headers=headers
         )
     else:
-        # todo: try except
-        response = client.chat.completions.create(**request.dict())
+        try:
+            response = client.chat.completions.create(**request.dict())
+        except Exception as e:
+            logger.error(f'Chat completion request exception {e}')
+            return
         logger.info(f'Received response for chat.completions.request {response}')
         headers['event_type'] = 'chat.completions.response'
         await producer.send(event=response, headers=headers)
@@ -80,8 +83,11 @@ async def handle_completion(
             client=async_client, producer=producer, request=request, headers=headers
         )
     else:
-        # todo: try except
-        response = client.completions.create(**request.dict())
+        try:
+            response = client.completions.create(**request.dict())
+        except Exception as e:
+            logger.error(f'Completion request exception {e}')
+            return
         logger.info(f'Received response for completions.request {response}')
         headers['event_type'] = 'completions.response'
         await producer.send(event=response, headers=headers)
@@ -94,8 +100,11 @@ async def chat_completions_streaming(
     request: ChatCompletionRequest,
     headers,
 ):
-    # todo: try except
-    stream = await client.chat.completions.create(**request.dict())
+    try:
+        stream = await client.chat.completions.create(**request.dict())
+    except Exception as e:
+        logger.error(f'Chat completion streaming request exception {e}')
+        return
     headers['event_type'] = 'chat.completions.response'
     async for chunk in stream:
         await producer.send(event=chunk, headers=headers)
@@ -104,8 +113,11 @@ async def chat_completions_streaming(
 async def completions_streaming(
     *, client: AsyncOpenAI, producer: KafkaTransportProducer, request: CompletionRequest, headers
 ):
-    # todo: try except
-    stream = await client.completions.create(**request.dict())
+    try:
+        stream = await client.completions.create(**request.dict())
+    except Exception as e:
+        logger.error(f'Completion streaming request exception {e}')
+        return
     headers['event_type'] = 'completions.response'
     async for chunk in stream:
         await producer.send(event=chunk, headers=headers)

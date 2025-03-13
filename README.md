@@ -1,6 +1,9 @@
-# OpenAI compatible FastAPI server with communication with LLM via Kafka messaging bus
+# OpenAI compatible FastAPI server with Kafka
 
-Plus with OpenAI integration via websockets and Kafka messaging bus.
+This is FastAPI application with LLM worked daemon running separately.
+
+Services are communicating via Kafka messaging bus.
+
 
 ## Author
 
@@ -29,7 +32,7 @@ Now write your base url, token, model into `.env`
 
 #### Run full stack
 
-Run `docker-compose up -d --build` 
+Run `docker-compose up -d --build`
 
 
 #### Local development
@@ -46,9 +49,7 @@ UI is accessible on http://127.0.0.1:8080/
 
 ## SwaggerUI
 
-Visit the 
-
-Now visit the http://127.0.0.1:8000/docs
+Visit the http://127.0.0.1:8000/docs
 
 You can call `/completions` and `/chat/completions` with sync or stream method.
 

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from app.agent.demon import consume_responses_futures, consume_responses_websockets
 from app.auth.db import create_db_and_tables
 from app.auth.logic import auth_backend, fastapi_users
-from app.auth.schemas import UserCreate, UserRead, UserUpdate
+from app.auth.schemas import UserCreate, UserRead
 from app.logger import setup_logging
 from app.openai.views import openai_router
 from app.settings import get_settings
@@ -39,21 +39,6 @@ def get_application() -> FastAPI:
         fastapi_users.get_register_router(UserRead, UserCreate),
         prefix='/auth',
         tags=['auth'],
-    )
-    app.include_router(
-        fastapi_users.get_reset_password_router(),
-        prefix='/auth',
-        tags=['auth'],
-    )
-    app.include_router(
-        fastapi_users.get_verify_router(UserRead),
-        prefix='/auth',
-        tags=['auth'],
-    )
-    app.include_router(
-        fastapi_users.get_users_router(UserRead, UserUpdate),
-        prefix='/users',
-        tags=['users'],
     )
     app.include_router(test_app_router)
     app.include_router(openai_router)

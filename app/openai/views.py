@@ -2,9 +2,11 @@ import asyncio
 import uuid
 from typing import AsyncGenerator
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from starlette.responses import StreamingResponse
 
+from app.auth.db import User
+from app.auth.logic import current_active_user
 from app.logger import logger
 from app.openai.dto import (
     ChatCompletionRequest,
@@ -24,12 +26,14 @@ settings = get_settings()
 
 
 @openai_router.get('/models')
-async def get_models() -> Model:
+async def get_models(user: User = Depends(current_active_user)) -> Model:
     return Model(data=[ModelData(id=settings.openai_model_name)])
 
 
 @openai_router.post('/completions')
-async def completions(request: CompletionRequest) -> CompletionResponse:
+async def completions(
+    request: CompletionRequest, user: User = Depends(current_active_user)
+) -> CompletionResponse:
     producer = KafkaTransportProducer(topic='chat_requests_generic')
     logger.info('LLM request Kafka Generic Producer Connected')
     await producer.connect()
@@ -55,7 +59,9 @@ async def completions(request: CompletionRequest) -> CompletionResponse:
 
 
 @openai_router.post('/chat/completions')
-async def chat_completions(request: ChatCompletionRequest) -> ChatCompletionResponse:
+async def chat_completions(
+    request: ChatCompletionRequest, user: User = Depends(current_active_user)
+) -> ChatCompletionResponse:
     producer = KafkaTransportProducer(topic='chat_requests_generic')
     logger.info('LLM request Kafka Generic Producer Connected')
     await producer.connect()
