@@ -4,6 +4,7 @@ import json
 
 from aiokafka import AIOKafkaConsumer
 from pydantic import ValidationError
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from app.logger import logger
 from app.openai.dto import (
@@ -37,6 +38,7 @@ class KafkaTransportConsumer:
             logger.error(f'Failed to deserialize message: {e}')
             return None
 
+    @retry(wait=wait_fixed(1), stop=stop_after_attempt(10))
     async def connect(self):
         try:
             await self.consumer.start()

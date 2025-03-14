@@ -27,21 +27,24 @@ def get_application() -> FastAPI:
     setup_logging(settings=settings)
 
     app = FastAPI(
+        openapi_url='/api/openapi.json',
+        docs_url='/api/docs',
+        redoc_url='/api/redoc',
         debug=settings.debug,
         version=settings.app_version or '0.1.0',
         title='Starter FastApi with FastApi users',
     )
 
     app.include_router(
-        fastapi_users.get_auth_router(auth_backend), prefix='/auth/jwt', tags=['auth']
+        fastapi_users.get_auth_router(auth_backend), prefix='/api/auth/jwt', tags=['auth']
     )
     app.include_router(
         fastapi_users.get_register_router(UserRead, UserCreate),
-        prefix='/auth',
+        prefix='/api/auth',
         tags=['auth'],
     )
-    app.include_router(test_app_router)
-    app.include_router(openai_router)
+    app.include_router(test_app_router, prefix='/api/test')
+    app.include_router(openai_router, prefix='/api')
 
     app.add_event_handler('startup', create_db_and_tables)
     app.add_event_handler('startup', start_demons)

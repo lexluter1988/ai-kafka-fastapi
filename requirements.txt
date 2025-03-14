@@ -174,6 +174,8 @@ starlette==0.45.3
     # via fastapi
 structlog==25.1.0
     # via -r requirements.in
+tenacity==9.0.0
+    # via -r requirements.in
 tomli==2.2.1
     # via
     #   coverage
