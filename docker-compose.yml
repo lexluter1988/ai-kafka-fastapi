@@ -9,6 +9,8 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    networks:
+      kafka_network:
 
   kafka:
     image: confluentinc/cp-kafka:latest
@@ -30,29 +32,42 @@ services:
       - bash
       - -c
       - |
-        /etc/confluent/docker/run &\n
-        sleep 10 &&\n
-        kafka-topics --create --topic chat_requests_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
-        kafka-topics --create --topic chat_responses_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 &&\n
+        /etc/confluent/docker/run &
+        echo "Waiting for Kafka to be ready..." &&
+        while ! kafka-topics --list --bootstrap-server kafka:9092; do sleep 5; done &&
+        kafka-topics --create --topic chat_requests_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --if-not-exists &&
+        kafka-topics --create --topic chat_responses_generic --bootstrap-server kafka:9092 --replication-factor 1 --partitions 1 --if-not-exists &&
         wait
+    networks:
+      kafka_network:
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --list --bootstrap-server kafka:9092 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     environment:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     ports:
       - "8080:8080"
+    networks:
+      kafka_network:
 
   qwen-worker:
     build:
       context: .
       dockerfile: app/agent/Dockerfile
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     environment:
       OPENAI_TOKEN: "${OPENAI_TOKEN}"
       OPENAI_MODEL_NAME: "${OPENAI_MODEL_NAME}"
@@ -64,6 +79,8 @@ services:
     deploy:
       mode: replicated
       replicas: 1
+    networks:
+      kafka_network:
 
   main:
     build:
@@ -77,6 +94,12 @@ services:
       KAFKA_REQUEST_TOPIC: "chat_requests_generic"
       KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
       BOOTSTRAP_SERVERS: kafka:9092
+    networks:
+      kafka_network:
+
+networks:
+  kafka_network:
+    driver: bridge
 
 # for testing purpose
 #  chatgpt-worker:
