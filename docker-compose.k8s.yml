@@ -61,64 +61,6 @@ services:
     networks:
       kafka_network:
 
-  qwen-worker:
-    build:
-      context: .
-      dockerfile: app/agent/Dockerfile
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      OPENAI_TOKEN: "${FIRST_OPENAI_TOKEN}"
-      OPENAI_MODEL_NAME: "${FIRST_OPENAI_MODEL_NAME}"
-      OPENAI_HOST: "${FIRST_OPENAI_HOST}"
-      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
-      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
-      BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: "qwen2_5"
-    deploy:
-      mode: replicated
-      replicas: 1
-    networks:
-      kafka_network:
-
-# Example for extending
-  chatgpt-worker:
-    build:
-      context: .
-      dockerfile: app/agent/Dockerfile
-    depends_on:
-      kafka:
-        condition: service_healthy
-    environment:
-      OPENAI_TOKEN: "${SECOND_OPENAI_TOKEN}"
-      OPENAI_MODEL_NAME: "${SECOND_OPENAI_MODEL_NAME}"
-      OPENAI_HOST: "${SECOND_OPENAI_HOST}"
-      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
-      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
-      BOOTSTRAP_SERVERS: kafka:9092
-      GROUP_ID: "gpt-4"
-    networks:
-      kafka_network:
-    deploy:
-      mode: replicated
-      replicas: 1
-
-  main:
-    build:
-      context: .
-      dockerfile: app/Dockerfile
-    ports:
-      - "8000:8000"
-    depends_on:
-      - qwen-worker
-    environment:
-      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
-      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
-      BOOTSTRAP_SERVERS: kafka:9092
-    networks:
-      kafka_network:
-
 networks:
   kafka_network:
     driver: bridge

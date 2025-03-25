@@ -176,6 +176,7 @@ FIRST_OPENAI_HOST=http://localhost:8000/v1
 SECOND_OPENAI_TOKEN=secret
 SECOND_OPENAI_MODEL_NAME=gpt-4
 SECOND_OPENAI_HOST=https://api.openai.com/v1
+BOOTSTRAP_SERVERS=localhost:9093
 ```
 
 With that you will have 2 docker containers, processing requests to models `Qwen` and `gpt-4` by separate services.
@@ -183,3 +184,29 @@ With that you will have 2 docker containers, processing requests to models `Qwen
 #### Replication
 
 In order to have more workers for call LLM, just increase `replicas: 1` number and there will be more services for operation with exact model.
+
+#### Separate deployment
+
+Usually Kafka and Gateway services are separated and you don't need to run shutdown+deployment of Kafka every code changes.
+
+For that case there is [docker-compose.k8s.yml](docker-compose.k8s.yml) and [docker-compose.llm.yml](docker-compose.llm.yml) files.
+
+First one will bring up your Kafka. Maybe in K8S or physical nodes.
+
+Second will bring up your LLM workers and FastAPI gateway, so that you can set them up near your LLM, connecting by internal network.
+
+Don't forget to set `BOOTSTRAP_SERVERS` in `.env` for FastAPI gateway services.
+
+##### Basic routine:
+
+Running one time deployment of Kafka
+
+```
+docker compose -f docker-compose.k8s.yml up -d
+```
+
+Running deployment of LLM workers on CI/CD on code changes
+
+```
+docker compose -f docker-compose.llm.yml up -d --build
+```

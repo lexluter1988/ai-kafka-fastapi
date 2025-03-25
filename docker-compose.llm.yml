@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  qwen-worker:
+    build:
+      context: .
+      dockerfile: app/agent/Dockerfile
+    environment:
+      OPENAI_TOKEN: "${FIRST_OPENAI_TOKEN}"
+      OPENAI_MODEL_NAME: "${FIRST_OPENAI_MODEL_NAME}"
+      OPENAI_HOST: "${FIRST_OPENAI_HOST}"
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: "${BOOTSTRAP_SERVERS}" # Kafka остается внешней
+      GROUP_ID: "qwen2_5"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  chatgpt-worker:
+    build:
+      context: .
+      dockerfile: app/agent/Dockerfile
+    environment:
+      OPENAI_TOKEN: "${SECOND_OPENAI_TOKEN}"
+      OPENAI_MODEL_NAME: "${SECOND_OPENAI_MODEL_NAME}"
+      OPENAI_HOST: "${SECOND_OPENAI_HOST}"
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: "${BOOTSTRAP_SERVERS}"
+      GROUP_ID: "gpt-4"
+    deploy:
+      mode: replicated
+      replicas: 1
+
+  main:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - qwen-worker
+    environment:
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: "${BOOTSTRAP_SERVERS}"
+
