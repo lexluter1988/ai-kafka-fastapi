@@ -12,6 +12,9 @@ settings = get_settings()
 
 
 async def llm_worker_generic():
+    logger.info(
+        f'Started to listen for model {settings.openai_model_name} on host {settings.openai_host}'
+    )
     client = OpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
     async_client = AsyncOpenAI(api_key=settings.openai_token, base_url=settings.openai_host)
 
@@ -33,6 +36,10 @@ async def llm_worker_generic():
 
     try:
         async for msg, headers in consumer.consume():
+            model_name = msg.model
+            if settings.openai_model_name != model_name:
+                logger.info(f'Unknown model {model_name} for that worker')
+                continue
             event_type = headers.get('event_type')
             logger.info(f'Received {event_type} request {msg}')
 
@@ -40,8 +47,7 @@ async def llm_worker_generic():
             if handler:
                 await handler(client, async_client, producer, msg, headers)
             else:
-                raise ValueError(f'Unknown event type: {event_type}')
-
+                logger.info(f'Unknown event type: {event_type}')
     finally:
         await producer.close()
         await consumer.close()

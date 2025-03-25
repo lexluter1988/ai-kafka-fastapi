@@ -82,3 +82,104 @@ test()
 ```
 
 There are more example in [test.py](test.py)
+
+
+## Production and scalability
+
+The following is the production architecture  ![architecture](app/docs/arch.jpg)
+
+### Services
+
+#### Nginx
+
+Service as your gateway from global network to the in-house services
+
+#### llm_api_gw
+
+FastAPI main application, receiving requests by `/api/v1/completions` and `/api/v1/chat/completions` and sending them to LLM workers via Kafka
+
+#### llm_api_gw_kafka_ui
+
+Internal UI for administration and debugging. You can view messages and topics from that UI.
+
+#### llm_api_gw_kafka
+
+Kafka messaging bus.
+
+#### llm_api_gw_kafka_zookeeper
+
+Kafka configuration service
+
+#### qwen-worker
+
+Worker, which receives messages from Kafka and send them to LLM host.
+Scalable and bounded to consumer group.
+
+### How-To-Scale.
+
+In case you have 2 or more LLM models and want to incoming requests to be routed to exact LLM host, you just need to 
+
+#### Set additional worker to docker-compose ( here we have 1 in-house model and 2 as chat gpt global ) 
+
+```yaml
+  qwen-worker:
+    build:
+      context: .
+      dockerfile: app/agent/Dockerfile
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      OPENAI_TOKEN: "${FIRST_OPENAI_TOKEN}"
+      OPENAI_MODEL_NAME: "${FIRST_OPENAI_MODEL_NAME}"
+      OPENAI_HOST: "${FIRST_OPENAI_HOST}"
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: "qwen2_5"
+    deploy:
+      mode: replicated
+      replicas: 1
+    networks:
+      kafka_network:
+
+  chatgpt-worker:
+    build:
+      context: .
+      dockerfile: app/agent/Dockerfile
+    depends_on:
+      kafka:
+        condition: service_healthy
+    environment:
+      OPENAI_TOKEN: "${SECOND_OPENAI_TOKEN}"
+      OPENAI_MODEL_NAME: "${SECOND_OPENAI_MODEL_NAME}"
+      OPENAI_HOST: "${SECOND_OPENAI_HOST}"
+      KAFKA_REQUEST_TOPIC: "chat_requests_generic"
+      KAFKA_RESPONSE_TOPIC: "chat_responses_generic"
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: "gpt-4"
+    networks:
+      kafka_network:
+    deploy:
+      mode: replicated
+      replicas: 1
+```
+
+#### Extend your .env file 
+
+```
+# Models and specifications
+FIRST_OPENAI_TOKEN=token
+FIRST_OPENAI_MODEL_NAME=Qwen/Qwen2.5-72B-Instruct-AWQ
+FIRST_OPENAI_HOST=http://localhost:8000/v1
+
+SECOND_OPENAI_TOKEN=secret
+SECOND_OPENAI_MODEL_NAME=gpt-4
+SECOND_OPENAI_HOST=https://api.openai.com/v1
+```
+
+With that you will have 2 docker containers, processing requests to models `Qwen` and `gpt-4` by separate services.
+
+#### Replication
+
+In order to have more workers for call LLM, just increase `replicas: 1` number and there will be more services for operation with exact model.

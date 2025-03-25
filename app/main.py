@@ -4,22 +4,19 @@ import asyncio
 
 from fastapi import FastAPI
 
-from app.agent.demon import consume_responses_futures, consume_responses_websockets
+from app.agent.demon import consume_responses_futures
 from app.auth.db import create_db_and_tables
 from app.auth.logic import auth_backend, fastapi_users
 from app.auth.schemas import UserCreate, UserRead
 from app.logger import setup_logging
 from app.openai.views import openai_router
 from app.settings import get_settings
-from app.state import active_connections
-from app.test_app.views import test_app_router
+
 
 settings = get_settings()
 
 
 async def start_demons():
-    # asyncio.create_task(llm_worker_generic())
-    # asyncio.create_task(consume_responses_websockets(active_connections=active_connections))
     asyncio.create_task(consume_responses_futures())
 
 
@@ -43,7 +40,6 @@ def get_application() -> FastAPI:
         prefix='/api/auth',
         tags=['auth'],
     )
-    app.include_router(test_app_router, prefix='/api/test')
     app.include_router(openai_router, prefix='/api')
 
     app.add_event_handler('startup', create_db_and_tables)

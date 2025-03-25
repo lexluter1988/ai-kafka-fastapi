@@ -26,8 +26,8 @@ class Settings(BaseSettings):
     log_level: str = 'DEBUG'
     log_format: str = 'json'
     openai_token: str = ''
-    openai_host: str
-    openai_model_name: str
+    openai_host: str = ''
+    openai_model_name: str = ''
 
 
 class KafkaSettings(BaseSettings):
